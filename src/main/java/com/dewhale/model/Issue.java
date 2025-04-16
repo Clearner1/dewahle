@@ -1,8 +1,7 @@
 package com.dewhale.model;
 
 /**
- * Issue类
+ * Issue类。
  */
 public class Issue {
-
 }
