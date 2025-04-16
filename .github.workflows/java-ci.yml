@@ -1,0 +1,67 @@
+# GitHub Actions Workflow for Java CI with Maven
+
+# 工作流的名称，会显示在 GitHub 的 Actions 标签页里
+name: Java CI with Maven
+
+# 控制工作流何时触发
+on:
+  # # 当有代码推送到 main 分支时触发
+  # push:
+  #   branches: [ main ] # 你可以根据你的默认分支名修改，比如 master
+  # # 当有针对 main 分支的 Pull Request 被创建或更新时触发
+  # pull_request:
+  #   branches: [ main ] # 同上，根据你的默认分支名修改
+  issues:
+    types: [labeled]
+
+# 定义工作流中要执行的任务（称为 "jobs"）
+jobs:
+  # 定义一个名为 "build" 的 job (你可以有多个 jobs)
+  build:
+    # 指定这个 job 在哪种类型的虚拟机上运行
+    # 'ubuntu-latest' 表示使用 GitHub 提供的最新稳定版 Ubuntu Linux 环境
+    runs-on: ubuntu-latest
+    # 添加一个条件判断：只有当添加的标签名称是 '测试' 时，才执行此 job
+    # github.event 是包含了触发工作流事件信息的上下文对象
+    # github.event.label.name 可以获取到刚刚被添加的标签的名称
+    if: github.event.label.name == 'test'
+
+    # 定义 "build" job 中按顺序执行的步骤 (steps)
+    steps:
+      # 第 1 步：检出代码
+      # 使用一个预先定义好的 action 'actions/checkout@v4'
+      # 这个 action 会把你的代码仓库下载到运行器的工作目录下
+      - name: Checkout code # 步骤名称，方便在日志中查看
+        uses: actions/checkout@v4
+
+      # 第 2 步：设置 Java 开发环境 (JDK)
+      # 使用另一个预定义的 action 'actions/setup-java@v4'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          # 指定需要安装的 Java 版本为 17
+          java-version: '17'
+          # 指定 Java 的发行版为 'temurin' (一个流行的 OpenJDK 发行版)
+          distribution: 'temurin'
+          # 启用 Maven 的依赖缓存。这样可以缓存下载过的库，
+          # 加快后续构建的速度
+          cache: 'maven'
+
+      # 第 3 步：使用 Maven 编译代码
+      # 'run:' 表示执行一个命令行命令
+      - name: Compile with Maven
+        # mvn 是 Maven 命令
+        # -B 表示以批处理模式运行（非交互式）
+        # compile 是 Maven 的一个生命周期阶段，表示编译源代码
+        # --file pom.xml 指明 Maven 配置文件的位置 (通常在根目录时可省略)
+        run: mvn -B compile --file pom.xml
+
+      # 第 4 步：使用 Maven 运行测试
+      - name: Test with Maven
+        # test 是 Maven 的另一个生命周期阶段，它会先编译测试代码，然后运行单元测试
+        # （默认使用 maven-surefire-plugin 插件）
+        run: mvn -B test --file pom.xml
+
+      # (可选步骤，已注释掉) 打包项目成 JAR 文件
+      # - name: Package with Maven
+      #   run: mvn -B package --file pom.xml
